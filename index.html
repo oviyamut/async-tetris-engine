@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tetris Test</title>
+    <style>
+        body { background: #202028; color: white; display: flex; justify-content: center; }
+        canvas { border: 2px solid #555; background: #000; }
+    </style>
+</head>
+<body>
+    <canvas id="game" width="200" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        const ws = new WebSocket(`ws://${window.location.host}/ws`);
+        const BLOCK = 20;
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (data.board) {
+                data.board.forEach((rowVal, y) => {
+                    for (let x = 9; x >= 0; x--) {
+                        const cell = rowVal & 7; 
+                        rowVal >>= 3;            
+                        if (cell !== 0) drawBlock(x, y, "gray");
+                    }
+                });
+            }
+
+            if (data.live) {
+                let [shape, orient, x, y] = data.live;
+                drawBlock(x, y, "red"); 
+            }
+        };
+
+        function drawBlock(x, y, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x * BLOCK, y * BLOCK, BLOCK - 1, BLOCK - 1);
+        }
+
+
+        document.addEventListener('keydown', e => {
+            const map = {
+                "ArrowLeft": "left", "ArrowRight": "right", 
+                "ArrowDown": "down", "ArrowUp": "cw", " ": "drop"
+            };
+            if (map[e.key]) ws.send(map[e.key]);
+        });
+    </script>
+</body>
+</html>
